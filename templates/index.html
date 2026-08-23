@@ -1,0 +1,811 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Voyx Dashboard</title>
+  <meta name="description" content="Voyx Sales Analytics Dashboard — daily leaderboard, top destinations, and revenue trends." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
+  <style>
+    /* ── Reset & Base ─────────────────────────────────────────── */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --orange:      #ff6b35;
+      --orange-light:#fff0ea;
+      --dark:        #0d1117;
+      --dark2:       #161b22;
+      --white:       #ffffff;
+      --bg:          #f0f2f5;
+      --card-shadow: 0 2px 12px rgba(0,0,0,.07);
+      --text-1:      #111827;
+      --text-2:      #6b7280;
+      --text-3:      #9ca3af;
+      --border:      #e5e7eb;
+      --radius:      14px;
+      --radius-sm:   8px;
+    }
+    body {
+      font-family: 'Inter', sans-serif;
+      background: var(--bg);
+      color: var(--text-1);
+      min-height: 100vh;
+    }
+
+    /* ── Header / Nav ─────────────────────────────────────────── */
+    .header {
+      background: var(--white);
+      border-bottom: 1px solid var(--border);
+      padding: 0 28px;
+      height: 60px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      box-shadow: 0 1px 6px rgba(0,0,0,.06);
+    }
+    .logo {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      text-decoration: none;
+    }
+    .logo-icon {
+      width: 32px; height: 32px;
+      background: var(--orange);
+      border-radius: 8px;
+      display: flex; align-items: center; justify-content: center;
+    }
+    .logo-icon svg { width: 20px; height: 20px; fill: white; }
+    .logo-text {
+      font-size: 22px;
+      font-weight: 800;
+      color: var(--orange);
+      letter-spacing: 1.5px;
+    }
+    .nav-center {
+      display: flex;
+      align-items: center;
+      gap: 20px;
+    }
+    .nav-date {
+      font-size: 13px;
+      color: var(--text-2);
+      font-weight: 500;
+    }
+    .nav-month-selector {
+      padding: 6px 12px;
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      font-family: inherit;
+      font-size: 13px;
+      color: var(--text-1);
+      background: var(--white);
+      outline: none;
+    }
+    .nav-month-selector {
+      padding: 6px 12px;
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      font-family: inherit;
+      font-size: 13px;
+      color: var(--text-1);
+      background: var(--white);
+      outline: none;
+    }
+    .nav-month-selector {
+      padding: 6px 12px;
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      font-family: inherit;
+      font-size: 13px;
+      color: var(--text-1);
+      background: var(--white);
+      outline: none;
+    }
+    .nav-tabs {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      background: #f3f4f6;
+      border-radius: 30px;
+      padding: 4px;
+    }
+    .nav-tab {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 7px 16px;
+      border-radius: 24px;
+      font-size: 13px;
+      font-weight: 500;
+      cursor: pointer;
+      border: none;
+      background: transparent;
+      color: var(--text-2);
+      transition: all .2s;
+    }
+    .nav-tab.active {
+      background: var(--orange);
+      color: white;
+      box-shadow: 0 2px 8px rgba(255,107,53,.35);
+    }
+    .nav-tab svg { width: 14px; height: 14px; }
+    .nav-right {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+    }
+    .nav-user {
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--text-1);
+    }
+    .nav-logout {
+      font-size: 12px;
+      color: #06b6d4;
+      font-weight: 500;
+      text-decoration: none;
+      display: flex;
+      align-items: center;
+      gap: 3px;
+    }
+
+    /* ── Main Layout ──────────────────────────────────────────── */
+    .main {
+      padding: 20px 24px;
+      max-width: 1400px;
+      margin: 0 auto;
+      display: flex;
+      flex-direction: column;
+      gap: 18px;
+    }
+
+    /* ── Stat Cards Row ───────────────────────────────────────── */
+    .stats-row {
+      display: grid;
+      grid-template-columns: 280px 1fr 1fr 1fr;
+      gap: 16px;
+    }
+    .stat-card {
+      background: var(--white);
+      border-radius: var(--radius);
+      padding: 20px 22px;
+      box-shadow: var(--card-shadow);
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      transition: transform .2s;
+    }
+    .stat-card:hover { transform: translateY(-2px); }
+    .stat-card.dark {
+      background: var(--dark);
+      color: white;
+    }
+    .stat-label {
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 1.2px;
+      text-transform: uppercase;
+      color: var(--text-3);
+    }
+    .stat-card.dark .stat-label { color: #6b7280; }
+    .stat-icon {
+      width: 34px; height: 34px;
+      background: #f3f4f6;
+      border-radius: var(--radius-sm);
+      display: flex; align-items: center; justify-content: center;
+      margin-bottom: 4px;
+    }
+    .stat-icon svg { width: 18px; height: 18px; color: var(--text-2); }
+    .stat-main {
+      display: flex;
+      align-items: baseline;
+      gap: 8px;
+    }
+    .stat-num {
+      font-size: 36px;
+      font-weight: 800;
+      line-height: 1;
+      color: var(--orange);
+    }
+    .stat-orders-label {
+      font-size: 18px;
+      font-weight: 600;
+      color: white;
+    }
+    .stat-big {
+      font-size: 34px;
+      font-weight: 800;
+      color: var(--text-1);
+      line-height: 1;
+    }
+    .stat-revenue {
+      font-size: 13px;
+      font-weight: 500;
+      color: #9ca3af;
+    }
+    .stat-card.dark .stat-revenue { color: #9ca3af; }
+
+    /* ── Middle Section ───────────────────────────────────────── */
+    .middle-row {
+      display: grid;
+      grid-template-columns: 1fr 340px;
+      gap: 16px;
+      align-items: start;
+    }
+
+    /* ── Panel (shared card styles) ──────────────────────────── */
+    .panel {
+      background: var(--white);
+      border-radius: var(--radius);
+      box-shadow: var(--card-shadow);
+      overflow: hidden;
+    }
+    .panel.dark {
+      background: var(--dark);
+      color: white;
+    }
+    .panel-header {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 16px 20px 12px;
+      border-bottom: 1px solid var(--border);
+    }
+    .panel.dark .panel-header { border-bottom-color: #30363d; }
+    .panel-title {
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      color: var(--text-2);
+    }
+    .panel.dark .panel-title { color: #8b949e; }
+    .panel-title-icon { font-size: 14px; }
+
+    /* ── Leaderboard Table ────────────────────────────────────── */
+    .leaderboard-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 13px;
+    }
+    .leaderboard-table thead tr {
+      background: #f9fafb;
+    }
+    .leaderboard-table th {
+      padding: 10px 14px;
+      text-align: left;
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: .8px;
+      text-transform: uppercase;
+      color: var(--text-3);
+      border-bottom: 1px solid var(--border);
+      white-space: nowrap;
+    }
+    .leaderboard-table td {
+      padding: 10px 14px;
+      border-bottom: 1px solid #f3f4f6;
+      vertical-align: middle;
+      white-space: nowrap;
+    }
+    .leaderboard-table tbody tr:last-child td { border-bottom: none; }
+    .leaderboard-table tbody tr:hover { background: #fafafa; }
+    .td-rank {
+      font-size: 12px;
+      font-weight: 700;
+      color: var(--text-3);
+      width: 28px;
+    }
+    .td-name {
+      font-weight: 600;
+      color: var(--text-1);
+      min-width: 90px;
+    }
+    .td-orange {
+      color: var(--orange);
+      font-weight: 700;
+    }
+    .td-day-wrap { line-height: 1; }
+    .td-day-rev {
+      display: block;
+      font-size: 10px;
+      color: var(--text-3);
+      font-weight: 500;
+      margin-top: 2px;
+    }
+    .td-money { color: var(--text-1); font-weight: 500; }
+
+    /* Target progress cell */
+    .target-cell {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      min-width: 140px;
+    }
+    .target-pct {
+      font-size: 11px;
+      font-weight: 700;
+      color: var(--orange);
+      min-width: 34px;
+    }
+    .progress-wrap {
+      flex: 1;
+      height: 6px;
+      background: #e5e7eb;
+      border-radius: 99px;
+      overflow: hidden;
+    }
+    .progress-fill {
+      height: 100%;
+      background: var(--orange);
+      border-radius: 99px;
+      transition: width .4s ease;
+    }
+    .target-num {
+      font-size: 10px;
+      color: var(--text-3);
+      font-weight: 600;
+      min-width: 28px;
+    }
+
+    /* ── Top Destinations ─────────────────────────────────────── */
+    .destinations-list {
+      padding: 8px 0;
+      max-height: 360px;
+      overflow-y: auto;
+    }
+    .destinations-list::-webkit-scrollbar { width: 4px; }
+    .destinations-list::-webkit-scrollbar-track { background: transparent; }
+    .destinations-list::-webkit-scrollbar-thumb { background: #30363d; border-radius: 99px; }
+    .dest-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 11px 20px;
+      border-bottom: 1px solid #21262d;
+      transition: background .15s;
+    }
+    .dest-item:last-child { border-bottom: none; }
+    .dest-item:hover { background: #161b22; }
+    .dest-name {
+      font-size: 13px;
+      font-weight: 500;
+      color: #e6edf3;
+      max-width: 200px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    .dest-badge {
+      background: #21262d;
+      color: #c9d1d9;
+      font-size: 12px;
+      font-weight: 700;
+      padding: 3px 11px;
+      border-radius: 8px;
+      min-width: 40px;
+      text-align: center;
+    }
+
+    /* ── Charts Row ───────────────────────────────────────────── */
+    .charts-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+    }
+    .chart-panel {
+      background: var(--white);
+      border-radius: var(--radius);
+      box-shadow: var(--card-shadow);
+      padding: 18px 20px 14px;
+    }
+    .chart-panel-header {
+      display: flex;
+      align-items: center;
+      gap: 7px;
+      margin-bottom: 14px;
+    }
+    .chart-title {
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      color: var(--text-2);
+    }
+    .chart-container {
+      position: relative;
+      height: 200px;
+    }
+
+    /* ── Loading Skeleton ─────────────────────────────────────── */
+    @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.4} }
+    .skeleton {
+      background: #e5e7eb;
+      border-radius: 6px;
+      animation: pulse 1.5s infinite;
+    }
+
+    /* ── Misc ─────────────────────────────────────────────────── */
+    .spinner {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 30px;
+      color: var(--text-3);
+      font-size: 13px;
+    }
+  </style>
+</head>
+<body>
+
+<!-- ── Header ──────────────────────────────────────────────────────────────── -->
+<header class="header">
+  <a class="logo" href="#">
+    <div class="logo-icon">
+      <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+        <path d="M3 4l5 9 4-6 4 6 5-9" stroke="white" stroke-width="2.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+    </div>
+    <span class="logo-text">VOYX</span>
+  </a>
+
+  <div class="nav-center">
+    <span class="nav-date" id="nav-date">—</span>
+    <input type="date" id="date-selector" class="nav-month-selector" />
+    <nav class="nav-tabs">
+      <button class="nav-tab active" id="tab-dashboard">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/>
+          <rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/>
+        </svg>
+        Dashboard
+      </button>
+    </nav>
+  </div>
+
+  <div class="nav-right">
+    <span class="nav-user">Voyx Admin</span>
+    <a class="nav-logout" href="#">Logout →</a>
+  </div>
+</header>
+
+<!-- ── Main ────────────────────────────────────────────────────────────────── -->
+<main class="main">
+
+  <!-- Stat Cards -->
+  <div class="stats-row">
+    <!-- Today Performance -->
+    <div class="stat-card dark">
+      <span class="stat-label">Today Performance</span>
+      <div class="stat-main">
+        <span class="stat-num" id="today-orders">—</span>
+        <span class="stat-orders-label">Orders</span>
+      </div>
+      <span class="stat-revenue" id="today-revenue">—</span>
+    </div>
+
+    <!-- MTD -->
+    <div class="stat-card">
+      <div class="stat-icon">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>
+        </svg>
+      </div>
+      <span class="stat-label" id="mtd-label">MTD</span>
+      <span class="stat-big" id="mtd-orders">—</span>
+      <span class="stat-revenue" id="mtd-revenue">—</span>
+    </div>
+
+    <!-- Prev Month Same Day -->
+    <div class="stat-card">
+      <div class="stat-icon">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>
+        </svg>
+      </div>
+      <span class="stat-label">Prev Month (Same Day)</span>
+      <span class="stat-big" id="prev-same-orders">—</span>
+      <span class="stat-revenue" id="prev-same-revenue">—</span>
+    </div>
+
+    <!-- Prev Month -->
+    <div class="stat-card">
+      <div class="stat-icon">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/>
+        </svg>
+      </div>
+      <span class="stat-label" id="prev-full-label">Prev Month</span>
+      <span class="stat-big" id="prev-full-orders">—</span>
+      <span class="stat-revenue" id="prev-full-revenue">—</span>
+    </div>
+  </div>
+
+  <!-- Leaderboard + Destinations -->
+  <div class="middle-row">
+
+    <!-- Leaderboard -->
+    <div class="panel">
+      <div class="panel-header">
+        <span class="panel-title-icon">📊</span>
+        <span class="panel-title">Daily Leaderboard</span>
+      </div>
+      <div id="leaderboard-wrap">
+        <div class="spinner">Loading…</div>
+      </div>
+    </div>
+
+    <!-- Top Destinations -->
+    <div class="panel dark">
+      <div class="panel-header">
+        <span class="panel-title-icon">🌐</span>
+        <span class="panel-title">Top Destinations</span>
+      </div>
+      <div class="destinations-list" id="destinations-list">
+        <div class="spinner">Loading…</div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Charts -->
+  <div class="charts-row">
+    <div class="chart-panel">
+      <div class="chart-panel-header">
+        <span class="panel-title-icon">📈</span>
+        <span class="chart-title">Daily Summary</span>
+      </div>
+      <div class="chart-container">
+        <canvas id="daily-chart"></canvas>
+      </div>
+    </div>
+    <div class="chart-panel">
+      <div class="chart-panel-header">
+        <span class="panel-title-icon">📈</span>
+        <span class="chart-title">Monthly Summary</span>
+      </div>
+      <div class="chart-container">
+        <canvas id="monthly-chart"></canvas>
+      </div>
+    </div>
+  </div>
+
+</main>
+
+<script>
+// ── Formatters ──────────────────────────────────────────────────────────────
+function fmtINR(amount) {
+  amount = parseFloat(amount) || 0;
+  if (amount >= 100000) return `₹${(amount/100000).toFixed(2)}L`;
+  if (amount >= 1000)   return `₹${(amount/1000).toFixed(2)}K`;
+  return `₹${Math.round(amount)}`;
+}
+function fmtRevSmall(amount) {
+  // For day-revenue shown under DAY count — show as ₹X.X (in thousands)
+  return `₹${(parseFloat(amount)/1000).toFixed(1)}`;
+}
+function fmtDate(iso) {
+  if (!iso) return '—';
+  const d = new Date(iso);
+  return d.toLocaleDateString('en-GB', { day:'2-digit', month:'short', year:'numeric' });
+}
+function clamp(v, min, max) { return Math.min(max, Math.max(min, v)); }
+
+// ── Render Summary Cards ────────────────────────────────────────────────────
+function renderSummary(d) {
+  document.getElementById('nav-date').textContent     = fmtDate(d.data_date);
+  document.getElementById('today-orders').textContent = d.today_orders ?? '0';
+  document.getElementById('today-revenue').textContent= fmtINR(d.today_revenue) + ' Revenue';
+
+  document.getElementById('mtd-label').textContent    = (d.mtd_label || 'MTD').toUpperCase();
+  document.getElementById('mtd-orders').textContent   = d.mtd_orders ?? '0';
+  document.getElementById('mtd-revenue').textContent  = fmtINR(d.mtd_revenue) + ' Revenue';
+
+  document.getElementById('prev-same-orders').textContent  = d.prev_same_orders ?? '0';
+  document.getElementById('prev-same-revenue').textContent = fmtINR(d.prev_same_revenue) + ' Revenue';
+
+  document.getElementById('prev-full-label').textContent   = (d.prev_full_label || 'Prev Month').toUpperCase();
+  document.getElementById('prev-full-orders').textContent  = d.prev_full_orders ?? '0';
+  document.getElementById('prev-full-revenue').textContent = fmtINR(d.prev_full_revenue) + ' Revenue';
+}
+
+// ── Render Leaderboard ──────────────────────────────────────────────────────
+function renderLeaderboard(rows) {
+  const wrap = document.getElementById('leaderboard-wrap');
+  if (!rows.length) { wrap.innerHTML = '<div class="spinner">No data</div>'; return; }
+
+  const thead = `
+    <thead><tr>
+      <th>#</th>
+      <th>Sales Rep</th>
+      <th>#Day</th>
+      <th>#MTD</th>
+      <th>MTD Rev</th>
+      <th>ARPU</th>
+      <th style="min-width:160px">Target</th>
+      <th>#PV Month</th>
+    </tr></thead>`;
+
+  const tbody = rows.map(r => {
+    const pct      = parseFloat(r.target_pct) || 0;
+    const barWidth = clamp(pct, 0, 100);
+    const dayRev   = parseFloat(r.day_revenue) || 0;
+    const dayRevHtml = dayRev > 0
+      ? `<span class="td-day-rev">${fmtRevSmall(dayRev)}</span>`
+      : '';
+
+    return `
+      <tr>
+        <td class="td-rank">${r.rank}</td>
+        <td class="td-name">${r.sales_rep}</td>
+        <td>
+          <div class="td-day-wrap">
+            <span class="td-orange">${r.day_orders}</span>
+            ${dayRevHtml}
+          </div>
+        </td>
+        <td class="td-orange">${r.mtd_orders}</td>
+        <td class="td-money">${fmtINR(r.mtd_revenue)}</td>
+        <td class="td-money">₹${Math.round(parseFloat(r.arpu) || 0)}</td>
+        <td>
+          <div class="target-cell">
+            <span class="target-pct">${Math.round(pct)}%</span>
+            <div class="progress-wrap">
+              <div class="progress-fill" style="width:${barWidth}%"></div>
+            </div>
+            <span class="target-num">${r.target}</span>
+          </div>
+        </td>
+        <td class="td-money">${r.prev_month_orders}</td>
+      </tr>`;
+  }).join('');
+
+  wrap.innerHTML = `<table class="leaderboard-table">${thead}<tbody>${tbody}</tbody></table>`;
+}
+
+// ── Render Top Destinations ─────────────────────────────────────────────────
+function renderDestinations(rows) {
+  const el = document.getElementById('destinations-list');
+  if (!rows.length) { el.innerHTML = '<div class="spinner">No data</div>'; return; }
+
+  el.innerHTML = rows.map(r => `
+    <div class="dest-item">
+      <span class="dest-name">${r.destination_name}</span>
+      <span class="dest-badge">${r.order_count}</span>
+    </div>`).join('');
+}
+
+// ── Chart Helper ────────────────────────────────────────────────────────────
+const CHART_BG_PLUGIN = {
+  id: 'chartBg',
+  beforeDraw(chart) {
+    const { ctx, chartArea } = chart;
+    if (!chartArea) return;
+    ctx.save();
+    ctx.fillStyle = '#FFF9F5';
+    ctx.fillRect(chartArea.left, chartArea.top, chartArea.width, chartArea.height);
+    ctx.restore();
+  }
+};
+
+let chartInstances = {};
+
+function makeLineChart(canvasId, labels, data, yLabel) {
+  if (chartInstances[canvasId]) {
+    chartInstances[canvasId].destroy();
+  }
+  const ctx = document.getElementById(canvasId).getContext('2d');
+  chartInstances[canvasId] = new Chart(ctx, {
+    type: 'line',
+    plugins: [CHART_BG_PLUGIN],
+    data: {
+      labels,
+      datasets: [{
+        data,
+        borderColor:     '#ff6b35',
+        borderWidth:     2.5,
+        pointBackgroundColor: '#ff6b35',
+        pointBorderColor:    '#fff',
+        pointBorderWidth:    1.5,
+        pointRadius:     4,
+        pointHoverRadius:6,
+        fill:            true,
+        backgroundColor: (ctx) => {
+          const gradient = ctx.chart.ctx.createLinearGradient(0, 0, 0, 200);
+          gradient.addColorStop(0,   'rgba(255,107,53,0.18)');
+          gradient.addColorStop(1,   'rgba(255,107,53,0.00)');
+          return gradient;
+        },
+        tension: 0.35,
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      interaction: { intersect: false, mode: 'index' },
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          backgroundColor: '#0d1117',
+          titleColor:      '#e6edf3',
+          bodyColor:       '#ff6b35',
+          borderColor:     '#30363d',
+          borderWidth:     1,
+          padding:         10,
+          callbacks: {
+            label: (ctx) => ` ${ctx.parsed.y} ${yLabel}`
+          }
+        }
+      },
+      scales: {
+        x: {
+          grid:  { color: 'rgba(0,0,0,0.04)' },
+          ticks: { color: '#9ca3af', font: { size: 10 }, maxTicksLimit: 10 }
+        },
+        y: {
+          grid:  { color: 'rgba(0,0,0,0.05)' },
+          ticks: { color: '#9ca3af', font: { size: 10 } },
+          beginAtZero: false
+        }
+      }
+    }
+  });
+}
+
+// ── Render Charts ───────────────────────────────────────────────────────────
+function renderCharts({ daily, monthly }) {
+  makeLineChart(
+    'daily-chart',
+    daily.map(r => r.date_label),
+    daily.map(r => r.daily_orders),
+    'orders'
+  );
+  makeLineChart(
+    'monthly-chart',
+    monthly.map(r => r.month_label),
+    monthly.map(r => r.monthly_orders),
+    'orders'
+  );
+}
+
+// ── Bootstrap Dashboard ─────────────────────────────────────────────────────
+async function loadDashboard() {
+  // Clear existing errors
+  const errBanner = document.querySelector('.db-error-banner');
+  if (errBanner) errBanner.remove();
+
+  const d = document.getElementById('date-selector').value;
+  const qs = d ? `?date=${d}` : '';
+  try {
+    const [summary, leaderboard, destinations, charts] = await Promise.all([
+      fetch('/api/summary' + qs).then(r => r.json()),
+      fetch('/api/leaderboard' + qs).then(r => r.json()),
+      fetch('/api/destinations' + qs).then(r => r.json()),
+      fetch('/api/charts' + qs).then(r => r.json()),
+    ]);
+    renderSummary(summary);
+    renderLeaderboard(leaderboard);
+    renderDestinations(destinations);
+    renderCharts(charts);
+  } catch (err) {
+    console.error('Dashboard load error:', err);
+    document.querySelector('.main').insertAdjacentHTML('afterbegin',
+      `<div class="db-error-banner" style="background:#fee2e2;color:#b91c1c;padding:12px 18px;border-radius:10px;font-size:13px;margin-bottom:15px;">
+        ⚠️ Could not connect to the database. Make sure Flask is running and PostgreSQL is accessible.
+      </div>`
+    );
+  }
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+  loadDashboard();
+  document.getElementById('date-selector').addEventListener('change', loadDashboard);
+});
+</script>
+</body>
+</html>
